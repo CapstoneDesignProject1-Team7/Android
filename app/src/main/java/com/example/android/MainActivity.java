@@ -25,14 +25,21 @@ public class MainActivity extends AppCompatActivity {
 
         checkPermission();
 
-        Button btn = findViewById(R.id.gotoMap);
-        btn.setOnClickListener(
+        Button btn_driver = findViewById(R.id.gotoMap_driver);
+        btn_driver.setOnClickListener(
                 view -> {
                     Intent intent = new Intent(MainActivity.this, MapActivity.class);
                     startActivity(intent);
                 }
         );
 
+        Button btn_walker = findViewById(R.id.gotoMap_walker);
+        btn_walker.setOnClickListener(
+                view -> {
+                    Intent intent = new Intent(MainActivity.this, MapActivity.class);
+                    startActivity(intent);
+                }
+        );
     }
     public void checkPermission(){
         //현재 안드로이드 버전이 6.0미만이면 메서드를 종료한다.
