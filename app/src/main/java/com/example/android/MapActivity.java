@@ -3,63 +3,39 @@ package com.example.android;
 import androidx.annotation.NonNull;
 import androidx.annotation.UiThread;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
-
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationManager;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
-import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
-
-import com.google.android.gms.common.api.Api;
-import com.google.android.gms.common.api.GoogleApi;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.naver.maps.geometry.LatLng;
+import com.naver.maps.geometry.LatLngBounds;
 import com.naver.maps.map.CameraPosition;
-import com.naver.maps.map.CameraUpdate;
 import com.naver.maps.map.LocationTrackingMode;
 import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.NaverMap;
 import com.naver.maps.map.NaverMapOptions;
 import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
-import com.naver.maps.map.overlay.LocationOverlay;
-import com.naver.maps.map.overlay.Marker;
 import com.naver.maps.map.util.FusedLocationSource;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
     private NaverMap mNaverMap;
     private FusedLocationSource locationSource;
-    public FusedLocationProviderClient fusedLocationProviderClient;
     private GoogleApiClient googleApiClient;
-    private static final int REQUEST_CHECK_SETTINGS = 2000;
 
 
     @Override
@@ -67,11 +43,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        //LocationManager locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
         googleApiClient = getAPIClientInstance();
         googleApiClient.connect();
         requestGPSSettings();
         showMap();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopLocationService();
     }
 
     private GoogleApiClient getAPIClientInstance() {
@@ -97,14 +78,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                     Log.i("", "Location settings are not satisfied. Show the user a dialog to" + "upgrade location settings ");
                     try {
-                        status.startResolutionForResult(MapActivity.this, REQUEST_CHECK_SETTINGS);
+                        status.startResolutionForResult(MapActivity.this, Constants.REQUEST_CHECK_SETTINGS);
                     } catch (IntentSender.SendIntentException e) {
-                        Log.e("Applicationsett", e.toString());
+                        Log.e("Applicationset", e.toString());
                     }
                     break;
                 case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
                     Log.i("", "Location settings are inadequate, and cannot be fixed here. Dialog " + "not created.");
-                    Toast.makeText(getApplication(), "Location settings are inadequate, and cannot be fixed here", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(getApplication(), "Location settings are inadequate, and cannot be fixed here", Toast.LENGTH_SHORT).show();
                     break;
             }
         });
@@ -112,7 +93,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CHECK_SETTINGS) {
+        if (requestCode == Constants.REQUEST_CHECK_SETTINGS) {
             if (resultCode != Activity.RESULT_OK) {
                 Toast.makeText(this, "내 위치를 알기 위해 위치 접근을 허용해주세요", Toast.LENGTH_LONG).show();
                 finish();
@@ -128,6 +109,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             mapFragment = MapFragment.newInstance();
             fm.beginTransaction().add(R.id.map, mapFragment).commit();
         }
+        locationSource = new FusedLocationSource(this, Constants.LOCATION_PERMISSION_REQUEST_CODE);
         // getMapAsync를 호출하여 비동기로 onMapReady 콜백 메서드 호출
         // onMapReady에서 NaverMap 객체를 받음
         mapFragment.getMapAsync(this);
@@ -139,47 +121,47 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         //NaverMap 객체 받아서 위치 소스 지정
         this.mNaverMap = naverMap;
         mNaverMap.setLocationSource(locationSource); //현재위치 표시
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this); //gps 자동으로 받아오기
-        setUpdateLocationListener(); // 내 위치를 가져옴
+        mNaverMap.setLocationTrackingMode(LocationTrackingMode.Follow);
+        mNaverMap.setMinZoom(16.0);
+        mNaverMap.setMaxZoom(18.0);
+        mNaverMap.setExtent(new LatLngBounds(new LatLng(31.43, 122.37), new LatLng(44.35, 132)));
+        UiSettings uiSettings = mNaverMap.getUiSettings();
+        uiSettings.setLocationButtonEnabled(true);
+        uiSettings.setZoomControlEnabled(false);
+        startLocationService();
     }
 
-    @SuppressLint("MissingPermission")
-    public void setUpdateLocationListener() {
-        // 현재 나의 위치
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(1000);
-
-        LocationCallback locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null) {
-                return;
-                }
-                for (Location location : locationResult.getLocations()) {
-                    // Update UI with location data
-                    double latitude = location.getLatitude();
-                    double longitude = location.getLongitude();
-                    Log.d("현재 위치", latitude + ", " + longitude);
-                    setLastLocation(location);
+    private boolean isLocationServiceRunning() {
+        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        if (activityManager != null) {
+            for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
+                if (LocationService.class.getName().equals(service.service.getClassName())) {
+                    if (service.foreground) {
+                        return true;
                     }
+                }
             }
-        };
-        fusedLocationProviderClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.myLooper()
-            );
+            return false;
         }
-
-        void setLastLocation(Location location){
-            LatLng mLocation = new LatLng(location.getLatitude(), location.getLongitude());
-            Marker marker = new Marker();
-            marker.setPosition(mLocation);
-
-            marker.setMap(mNaverMap);
-            CameraUpdate cameraUpdate = CameraUpdate.scrollTo(mLocation);
-            mNaverMap.moveCamera(cameraUpdate);
+        return false;
+    }
+    private void startLocationService() {
+        if (!isLocationServiceRunning()) {
+            Intent intent = new Intent(getApplicationContext(), LocationService.class);
+            intent.setAction(Constants.ACTION_START_LOCATION_SERVICE);
+            startService(intent);
+            Toast.makeText(this, "서비스를 시작합니다", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void stopLocationService() {
+        if (isLocationServiceRunning()) {
+            Intent intent = new Intent(getApplicationContext(), LocationService.class);
+            intent.setAction(Constants.ACTION_STOP_LOCATION_SERVICE);
+            startService(intent);
+            Toast.makeText(this, "서비스를 종료합니다", Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
 }
