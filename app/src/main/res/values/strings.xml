@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Android</string>
+    <string name="driver_button">운전자 모드</string>
+    <string name="walker_button">보행자 모드</string>
 </resources>
