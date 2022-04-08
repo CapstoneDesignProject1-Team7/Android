@@ -9,6 +9,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -22,11 +23,9 @@ import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.naver.maps.geometry.LatLng;
 import com.naver.maps.geometry.LatLngBounds;
-import com.naver.maps.map.CameraPosition;
 import com.naver.maps.map.LocationTrackingMode;
 import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.NaverMap;
-import com.naver.maps.map.NaverMapOptions;
 import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.util.FusedLocationSource;
@@ -128,7 +127,25 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         UiSettings uiSettings = mNaverMap.getUiSettings();
         uiSettings.setLocationButtonEnabled(true);
         uiSettings.setZoomControlEnabled(false);
+        //startLocationService();
+        startService();
+    }
+    private void startService(){
+        startWifiService();
         startLocationService();
+    }
+    private void startWifiService(){
+        turnOnWifi();
+    }
+
+    private void turnOnWifi(){
+        WifiManager wifiManager = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (wifiManager != null){
+            if(!wifiManager.isWifiEnabled()){
+                // 와이파이 꺼진 상태
+                wifiManager.setWifiEnabled(true); // 와이파이 켠다
+            }
+        }
     }
 
     private boolean isLocationServiceRunning() {
