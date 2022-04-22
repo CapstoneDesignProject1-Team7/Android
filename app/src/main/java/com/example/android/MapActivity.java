@@ -15,6 +15,7 @@ import android.content.IntentSender;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +43,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private GoogleApiClient googleApiClient;
     private LocationReceiver locationReceiver;
     private TextView speedTextView;
+    private UserData userData;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,12 +150,15 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         UiSettings uiSettings = mNaverMap.getUiSettings();
         uiSettings.setLocationButtonEnabled(true);
         uiSettings.setZoomControlEnabled(false);
-        //startLocationService();
         startService();
     }
     private void startService(){
         startWifiService();
         startLocationService();
+        Intent intent = getIntent();
+        int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
+        String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
+        userData = new UserData(id, type, 0, 0, 0);
     }
     private void startWifiService(){
         turnOnWifi();
@@ -210,9 +215,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         public void onReceive(Context context, Intent intent) {
             // an Intent broadcast.
             Bundle b = intent.getExtras();
+            double latitude = b.getDouble("latitude");
+            double longitude = b.getDouble("longitude");
             int speed = b.getInt("speed");
             speedTextView = findViewById(R.id.speed);
-
+            userData.setSpeed(speed);
+            userData.setLatitude(latitude);
+            userData.setLongitude(longitude);
             handler.post(new Runnable() {
                 @Override
                 public void run() {

@@ -48,11 +48,13 @@ public class LocationService extends Service {
                 locationResult.getLastLocation();
                 double latitude = locationResult.getLastLocation().getLatitude();
                 double longitude = locationResult.getLastLocation().getLongitude();
-                Log.v("현재 위치, 속도", latitude + ", " + longitude+"/"+currentSpeedKmH);
+                //Log.v("현재 위치, 속도", latitude + ", " + longitude+"/"+currentSpeedKmH);
 
                 Intent intent = new Intent("UpdateSpeed");
                 Bundle bundle = new Bundle();
                 bundle.putInt("speed",currentSpeedKmH);
+                bundle.putDouble("latitude",latitude);
+                bundle.putDouble("longitude",longitude);
                 intent.putExtras(bundle);
                 LocalBroadcastManager.getInstance(LocationService.this).sendBroadcast(intent);
 
