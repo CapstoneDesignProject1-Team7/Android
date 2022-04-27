@@ -4,14 +4,20 @@ import androidx.annotation.NonNull;
 import androidx.annotation.UiThread;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -35,8 +41,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private NaverMap mNaverMap;
     private FusedLocationSource locationSource;
     private GoogleApiClient googleApiClient;
-
-
+    private LocationReceiver locationReceiver;
+    private TextView speedTextView;
+    private UserData userData;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,6 +53,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         googleApiClient.connect();
         requestGPSSettings();
         showMap();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        locationReceiver = new LocationReceiver(new Handler());
+        final IntentFilter intentFilter = new IntentFilter("UpdateSpeed");
+        LocalBroadcastManager.getInstance(this).registerReceiver(locationReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        if (locationReceiver != null)
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(locationReceiver);
+        locationReceiver = null;
     }
 
     @Override
@@ -127,12 +150,15 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         UiSettings uiSettings = mNaverMap.getUiSettings();
         uiSettings.setLocationButtonEnabled(true);
         uiSettings.setZoomControlEnabled(false);
-        //startLocationService();
         startService();
     }
     private void startService(){
         startWifiService();
         startLocationService();
+        Intent intent = getIntent();
+        int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
+        String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
+        userData = new UserData(id, type, 0, 0, 0);
     }
     private void startWifiService(){
         turnOnWifi();
@@ -180,5 +206,30 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+    public class LocationReceiver extends BroadcastReceiver {
+        private final Handler handler;
+        public LocationReceiver(Handler handler){
+            this.handler = handler;
+        }
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // an Intent broadcast.
+            Bundle b = intent.getExtras();
+            double latitude = b.getDouble("latitude");
+            double longitude = b.getDouble("longitude");
+            int speed = b.getInt("speed");
+            speedTextView = findViewById(R.id.speed);
+            userData.setSpeed(speed);
+            userData.setLatitude(latitude);
+            userData.setLongitude(longitude);
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    String text = String.valueOf(speed);
+                    speedTextView.setText(text);
+                }
+            });
+        }
+    }
 
 }

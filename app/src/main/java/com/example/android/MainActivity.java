@@ -2,7 +2,6 @@ package com.example.android;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -11,12 +10,6 @@ import android.widget.Button;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String[] PERMISSIONS = {
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_WIFI_STATE,
-            Manifest.permission.CHANGE_WIFI_STATE
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
         btn_driver.setOnClickListener(
                 view -> {
                     Intent intent = new Intent(MainActivity.this, MapActivity.class);
+                    intent.putExtra("type",1);
                     startActivity(intent);
                 }
         );
@@ -37,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
         btn_walker.setOnClickListener(
                 view -> {
                     Intent intent = new Intent(MainActivity.this, MapActivity.class);
+                    intent.putExtra("type",0);
                     startActivity(intent);
                 }
         );
@@ -47,11 +42,11 @@ public class MainActivity extends AppCompatActivity {
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
             return;
 
-        for(String permission : PERMISSIONS){
+        for(String permission : Constants.PERMISSIONS){
             //권한 허용 여부를 확인한다.
             if(checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_DENIED){
                 //권한 허용을여부를 확인하는 창을 띄운다
-                requestPermissions(PERMISSIONS,0);
+                requestPermissions(Constants.PERMISSIONS,0);
             }
         }
     }

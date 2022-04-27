@@ -3,8 +3,9 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/rladf/AndroidStudioProjects/Android/app/src/main/res/drawable/bg_speed.xml" value="0.1" />
         <entry key="..\:/Users/rladf/AndroidStudioProjects/Android/app/src/main/res/layout/activity_main.xml" value="0.1015625" />
-        <entry key="..\:/Users/rladf/AndroidStudioProjects/Android/app/src/main/res/layout/activity_map.xml" value="0.1015625" />
+        <entry key="..\:/Users/rladf/AndroidStudioProjects/Android/app/src/main/res/layout/activity_map.xml" value="0.10144927536231885" />
       </map>
     </option>
   </component>
