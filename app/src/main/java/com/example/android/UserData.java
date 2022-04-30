@@ -16,6 +16,14 @@ public class UserData {
         this.speed = speed;
     }
 
+    public UserData(String id, int type, double latitude, double longitude) {
+        super();
+        this.id = id;
+        this.type = type;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
     public String getId() {
         return id;
     }

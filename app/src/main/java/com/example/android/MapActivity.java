@@ -36,6 +36,8 @@ import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.util.FusedLocationSource;
 
+import java.net.HttpURLConnection;
+
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
     private NaverMap mNaverMap;
@@ -44,6 +46,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private LocationReceiver locationReceiver;
     private TextView speedTextView;
     private UserData userData;
+    private RequestHttpConnection httpConn;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +54,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         googleApiClient = getAPIClientInstance();
         googleApiClient.connect();
+        httpConn = new RequestHttpConnection();
         requestGPSSettings();
         showMap();
     }
@@ -158,7 +162,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Intent intent = getIntent();
         int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
         String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
-        userData = new UserData(id, type, 0, 0, 0);
+        // 내 데이터 저장
+        userData = new UserData(id, type , 0, 0);
+
+        // for test data
+        httpConn.postUserData(new UserData(id, 1, 35.8886, 128.6116));
     }
     private void startWifiService(){
         turnOnWifi();
