@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -37,6 +38,7 @@ import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.util.FusedLocationSource;
 
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -46,7 +48,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private LocationReceiver locationReceiver;
     private TextView speedTextView;
     private UserData userData;
+    private ArrayList nearByUserList;
     private RequestHttpConnection httpConn;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +85,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         super.onDestroy();
         stopLocationService();
 
+        // 내 데이터 삭제
+        httpConn.deleteUserData(userData);
     }
 
     private GoogleApiClient getAPIClientInstance() {
@@ -156,6 +163,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         uiSettings.setLocationButtonEnabled(true);
         uiSettings.setZoomControlEnabled(false);
         startService();
+
+        nearByUserList = new ArrayList<LocationData>();
+        AsyncTask.execute(new Runnable(
+        ) {
+            @Override
+            public void run() {
+                nearByUserList = httpConn.getUserData(userData);
+            }
+        });
+
     }
     private void startService(){
         startWifiService();
