@@ -25,7 +25,7 @@ public class RequestHttpConnection {
     private URL url;
 
     public RequestHttpConnection(){
-        test_server = "http://39.121.10.168:8001/user/";
+        test_server = "http://192.168.35.49:8080/user/";
     }
 
     // get
