@@ -79,6 +79,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onDestroy() {
         super.onDestroy();
         stopLocationService();
+
     }
 
     private GoogleApiClient getAPIClientInstance() {
