@@ -39,6 +39,8 @@ import com.naver.maps.map.util.FusedLocationSource;
 
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -50,7 +52,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private UserData userData;
     private ArrayList nearByUserList;
     private RequestHttpConnection httpConn;
-
+    private Timer timer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +62,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         googleApiClient = getAPIClientInstance();
         googleApiClient.connect();
         httpConn = new RequestHttpConnection();
+        nearByUserList = new ArrayList<LocationData>();
+        timer = new Timer();
+
         requestGPSSettings();
         showMap();
     }
@@ -87,6 +92,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         // 내 데이터 삭제
         httpConn.deleteUserData(userData);
+        // 타이머 종료
+        timer.cancel();
     }
 
     private GoogleApiClient getAPIClientInstance() {
@@ -164,15 +171,18 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         uiSettings.setZoomControlEnabled(false);
         startService();
 
-        nearByUserList = new ArrayList<LocationData>();
-        AsyncTask.execute(new Runnable(
-        ) {
+
+
+        TimerTask getUserDataTask = new TimerTask(){
             @Override
             public void run() {
                 nearByUserList = httpConn.getUserData(userData);
             }
-        });
 
+        };
+        
+        // 1초 마다 호출
+        timer.schedule(getUserDataTask, 0, 1000);
     }
     private void startService(){
         startWifiService();
@@ -180,7 +190,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Intent intent = getIntent();
         int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
         String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
-        // 내 데이터 저장
+        // 내 데이터로 변경 필요
         userData = new UserData(id, type , 0, 0);
 
         // for test data
