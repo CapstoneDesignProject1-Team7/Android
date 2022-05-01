@@ -1,5 +1,6 @@
 package com.example.android;
 
+import android.app.DownloadManager;
 import android.content.ContentValues;
 import android.util.Log;
 
@@ -19,9 +20,13 @@ import java.util.List;
 
 public class RequestHttpConnection {
     // test server
-    private String test_server = "http://39.121.10.168:8001/user/";
+    private String test_server;
     private HttpURLConnection httpConn;
     private URL url;
+
+    public RequestHttpConnection(){
+        test_server = "http://39.121.10.168:8001/user/";
+    }
 
     // get
     public ArrayList<LocationData> getUserData(UserData userData){
@@ -29,39 +34,32 @@ public class RequestHttpConnection {
         new Thread(){
             public void run() {
                 try {
-                    String getUrl = test_server;
-                    url = new URL(getUrl);
-                    httpConn = (HttpURLConnection) url.openConnection();
 
-                    // GET 설정
-                    httpConn.setRequestMethod("POST");
-
-                    StringBuffer buffer = new StringBuffer();
-                    buffer.append("id").append("=").append(userData.getId()).append("&");
+                    StringBuffer buffer = new StringBuffer(test_server);
+                    buffer.append("?");
                     buffer.append("latitude").append("=").append(userData.getLatitude()).append("&");
                     buffer.append("longitude").append("=").append(userData.getLongitude()).append("&");
                     buffer.append("type").append("=").append(userData.getType());
 
-                    // 서버 전송
-                    OutputStream os = httpConn.getOutputStream();
-                    os.write(buffer.toString().getBytes("UTF-8"));
-                    os.flush();
-                    os.close();
+                    url = new URL(buffer.toString());
+                    httpConn = (HttpURLConnection) url.openConnection();
+                    // GET 설정
+                    httpConn.setRequestMethod("GET");
+
 
                     if(httpConn.getResponseCode() != 200) {
-                        throw new Exception( "Not Ok : " + httpConn.getResponseCode());
+                        Log.i("ERROR","Not Ok : " + httpConn.getResponseCode());
                     }
 
                     InputStreamReader input = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
                     BufferedReader reader = new BufferedReader(input);
                     StringBuilder builder = new StringBuilder();
-                    String str;
-                    while ((str = reader.readLine()) != null) {
-                        builder.append(str + "\n");                     // View에 표시하기 위해 라인 구분자 추가
+                    String tmp;
+                    while ((tmp = reader.readLine()) != null) {
+                        builder.append(tmp + "\n");                     // View에 표시하기 위해 라인 구분자 추가
                     }
                     String myResult = builder.toString();
-                    System.out.println(myResult);
-
+                    Log.i("",myResult);
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (Exception e) {
@@ -102,7 +100,7 @@ public class RequestHttpConnection {
                     os.close();
 
                     if(httpConn.getResponseCode() != 200) {
-                        return;
+                        Log.i("ERROR","Not Ok : " + httpConn.getResponseCode());
                     }
 
                 } catch (MalformedURLException e) {
@@ -142,7 +140,7 @@ public class RequestHttpConnection {
                     os.flush();
                     os.close();
 
-                    if(httpConn.getResponseCode() != 200) {
+                    if(httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                         throw new Exception( "Not Ok : " + httpConn.getResponseCode());
                     }
 
@@ -180,7 +178,7 @@ public class RequestHttpConnection {
                     os.flush();
                     os.close();
 
-                    if(httpConn.getResponseCode() != 200) {
+                    if(httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                         throw new Exception( "Not Ok : " + httpConn.getResponseCode());
                     }
 
