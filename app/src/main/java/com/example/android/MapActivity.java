@@ -176,6 +176,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         TimerTask getUserDataTask = new TimerTask(){
             @Override
             public void run() {
+                //httpConn.putUserData(userData);
                 nearByUserList = httpConn.getUserData(userData);
             }
         };
@@ -188,11 +189,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Intent intent = getIntent();
         int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
         String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
-        // 내 데이터로 변경 필요
-        userData = new UserData(id, type , 0, 0);
+        // 내 데이터로 변경 필요 - test data (경북대학교)
+        userData = new UserData(id, type, 35.8886, 128.6116);
 
         // for test data
-        httpConn.postUserData(new UserData(id, 1, 35.8886, 128.6110));
+        httpConn.postUserData(userData);
 
     }
     private void startWifiService(){
@@ -255,8 +256,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             int speed = b.getInt("speed");
             speedTextView = findViewById(R.id.speed);
             userData.setSpeed(speed);
-            userData.setLatitude(latitude);
-            userData.setLongitude(longitude);
+            // 테스트 하기 위해 잠시 중단
+//            userData.setLatitude(latitude);
+//            userData.setLongitude(longitude);
             handler.post(new Runnable() {
                 @Override
                 public void run() {
