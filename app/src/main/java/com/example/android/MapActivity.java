@@ -13,7 +13,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -37,7 +36,6 @@ import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.util.FusedLocationSource;
 
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -49,7 +47,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private GoogleApiClient googleApiClient;
     private LocationReceiver locationReceiver;
     private TextView speedTextView;
-    private UserData userData;
+    private UserDTO userDTO;
     private ArrayList nearByUserList;
     private RequestHttpConnection httpConn;
     private Timer timer;
@@ -62,7 +60,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         googleApiClient = getAPIClientInstance();
         googleApiClient.connect();
         httpConn = new RequestHttpConnection();
-        nearByUserList = new ArrayList<LocationData>();
+        nearByUserList = new ArrayList<LocationDTO>();
         timer = new Timer();
 
 
@@ -92,7 +90,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         stopLocationService();
 
         // 내 데이터 삭제
-        httpConn.deleteUserData(userData);
+        httpConn.deleteUserData(userDTO);
         // 타이머 종료
         timer.cancel();
     }
@@ -177,7 +175,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             @Override
             public void run() {
                 //httpConn.putUserData(userData);
-                nearByUserList = httpConn.getUserData(userData);
+                nearByUserList = httpConn.getUserData(userDTO);
             }
         };
         // 3초 마다 호출
@@ -190,10 +188,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
         String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
         // 내 데이터로 변경 필요 - test data (경북대학교)
-        userData = new UserData(id, type, 35.8886, 128.6116);
+        userDTO = new UserDTO(id, type, 35.8886, 128.6116);
 
         // for test data
-        httpConn.postUserData(userData);
+        httpConn.postUserData(userDTO);
 
     }
     private void startWifiService(){
@@ -255,7 +253,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             double longitude = b.getDouble("longitude");
             int speed = b.getInt("speed");
             speedTextView = findViewById(R.id.speed);
-            userData.setSpeed(speed);
+            userDTO.setSpeed(speed);
             // 테스트 하기 위해 잠시 중단
 //            userData.setLatitude(latitude);
 //            userData.setLongitude(longitude);
