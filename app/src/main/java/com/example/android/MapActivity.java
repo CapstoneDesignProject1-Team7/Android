@@ -65,6 +65,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         nearByUserList = new ArrayList<LocationData>();
         timer = new Timer();
 
+
         requestGPSSettings();
         showMap();
     }
@@ -172,17 +173,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         startService();
 
 
-
         TimerTask getUserDataTask = new TimerTask(){
             @Override
             public void run() {
                 nearByUserList = httpConn.getUserData(userData);
             }
-
         };
-        
-        // 1초 마다 호출
-        timer.schedule(getUserDataTask, 0, 1000);
+        // 3초 마다 호출
+        timer.schedule(getUserDataTask, 0, 3000);
     }
     private void startService(){
         startWifiService();
@@ -194,7 +192,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         userData = new UserData(id, type , 0, 0);
 
         // for test data
-        httpConn.postUserData(new UserData(id, 1, 35.8886, 128.6116));
+        httpConn.postUserData(new UserData(id, 1, 35.8886, 128.6110));
+
     }
     private void startWifiService(){
         turnOnWifi();

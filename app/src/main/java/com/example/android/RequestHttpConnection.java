@@ -4,6 +4,8 @@ import android.app.DownloadManager;
 import android.content.ContentValues;
 import android.util.Log;
 
+import org.json.JSONObject;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RequestHttpConnection {
     // test server
@@ -31,6 +35,7 @@ public class RequestHttpConnection {
     // get
     public ArrayList<LocationData> getUserData(UserData userData){
         ArrayList<LocationData> nearByUserList = new ArrayList<LocationData>();
+
         new Thread(){
             public void run() {
                 try {
@@ -45,28 +50,27 @@ public class RequestHttpConnection {
                     httpConn = (HttpURLConnection) url.openConnection();
                     // GET 설정
                     httpConn.setRequestMethod("GET");
+                    httpConn.setReadTimeout(3000);
+                    httpConn.setConnectTimeout(3000);
+                    httpConn.connect();
 
+                    InputStreamReader response = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
+                    BufferedReader reader = new BufferedReader(response);
 
-                    if(httpConn.getResponseCode() != 200) {
-                        Log.i("ERROR","Not Ok : " + httpConn.getResponseCode());
+                    buffer = new StringBuffer();
+                    String line = "";
+
+                    while((line = reader.readLine()) != null){
+                        buffer.append(line + "\n");
                     }
 
-                    InputStreamReader input = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
-                    BufferedReader reader = new BufferedReader(input);
-                    StringBuilder builder = new StringBuilder();
-                    String tmp;
-                    while ((tmp = reader.readLine()) != null) {
-                        builder.append(tmp + "\n");                     // View에 표시하기 위해 라인 구분자 추가
-                    }
-                    String myResult = builder.toString();
-                    Log.i("",myResult);
+                    Log.i("RESULT", buffer.toString());
+
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }finally {
-                    if (httpConn != null)
-                        httpConn.disconnect();
                     Log.i("REST API","REQUEST GET");
                 }
             }
@@ -97,7 +101,6 @@ public class RequestHttpConnection {
                     OutputStream os = httpConn.getOutputStream();
                     os.write(buffer.toString().getBytes("UTF-8"));
                     os.flush();
-                    os.close();
 
                     if(httpConn.getResponseCode() != 200) {
                         Log.i("ERROR","Not Ok : " + httpConn.getResponseCode());
@@ -108,8 +111,6 @@ public class RequestHttpConnection {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }finally {
-                    if (httpConn != null)
-                        httpConn.disconnect();
                     Log.i("REST API","REQUEST POST");
                 }
             }
@@ -138,7 +139,6 @@ public class RequestHttpConnection {
                     OutputStream os = httpConn.getOutputStream();
                     os.write(buffer.toString().getBytes("UTF-8"));
                     os.flush();
-                    os.close();
 
                     if(httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                         throw new Exception( "Not Ok : " + httpConn.getResponseCode());
@@ -149,8 +149,6 @@ public class RequestHttpConnection {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }finally {
-                    if (httpConn != null)
-                        httpConn.disconnect();
                     Log.i("REST API","REQUEST UPDATE");
                 }
             }
@@ -176,7 +174,6 @@ public class RequestHttpConnection {
                     OutputStream os = httpConn.getOutputStream();
                     os.write(buffer.toString().getBytes("UTF-8"));
                     os.flush();
-                    os.close();
 
                     if(httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                         throw new Exception( "Not Ok : " + httpConn.getResponseCode());
@@ -187,8 +184,6 @@ public class RequestHttpConnection {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }finally {
-                    if (httpConn != null)
-                        httpConn.disconnect();
                     Log.i("REST API","REQUEST DELETE");
                 }
             }
