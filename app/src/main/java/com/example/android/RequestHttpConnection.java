@@ -1,26 +1,17 @@
 package com.example.android;
 
-import android.app.DownloadManager;
-import android.content.ContentValues;
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class RequestHttpConnection {
     // test server
@@ -33,8 +24,8 @@ public class RequestHttpConnection {
     }
 
     // get
-    public ArrayList<LocationData> getUserData(UserData userData){
-        ArrayList<LocationData> nearByUserList = new ArrayList<LocationData>();
+    public ArrayList<LocationDTO> getUserData(UserDTO userDTO){
+        ArrayList<LocationDTO> nearByUserList = new ArrayList<>();
 
         new Thread(){
             public void run() {
@@ -42,9 +33,9 @@ public class RequestHttpConnection {
 
                     StringBuffer buffer = new StringBuffer(test_server);
                     buffer.append("?");
-                    buffer.append("latitude").append("=").append(userData.getLatitude()).append("&");
-                    buffer.append("longitude").append("=").append(userData.getLongitude()).append("&");
-                    buffer.append("type").append("=").append(userData.getType());
+                    buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
+                    buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
+                    buffer.append("type").append("=").append(userDTO.getType());
 
                     url = new URL(buffer.toString());
                     httpConn = (HttpURLConnection) url.openConnection();
@@ -56,13 +47,22 @@ public class RequestHttpConnection {
                     BufferedReader reader = new BufferedReader(response);
 
                     buffer = new StringBuffer();
+
                     String line = "";
 
                     while((line = reader.readLine()) != null){
                         buffer.append(line + "\n");
                     }
 
-                    Log.i("RESULT", buffer.toString());
+                    JSONArray jsonArray = new JSONArray(buffer.toString());
+                    for(int i = 0; i < jsonArray.length(); i++){
+                        JSONObject jObject = jsonArray.getJSONObject(i);
+                        double latitude = jObject.getDouble("latitude");
+                        double longitude = jObject.getDouble("longitude");
+                        nearByUserList.add(new LocationDTO(latitude, longitude));
+                    }
+
+                    //Log.i("RESULT", jsonArray.toString());
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -74,15 +74,15 @@ public class RequestHttpConnection {
             }
         }.start();
 
-        return null;
+        return nearByUserList;
     }
 
     // insert
-    public void postUserData(UserData userData){
+    public void postUserData(UserDTO userDTO){
         new Thread(){
             public void run() {
                 try {
-                    String postUrl = test_server + userData.getId();
+                    String postUrl = test_server + userDTO.getId();
                     url = new URL(postUrl);
                     httpConn = (HttpURLConnection) url.openConnection();
 
@@ -90,10 +90,10 @@ public class RequestHttpConnection {
                     httpConn.setRequestMethod("POST");
 
                     StringBuffer buffer = new StringBuffer();
-                    buffer.append("id").append("=").append(userData.getId()).append("&");
-                    buffer.append("latitude").append("=").append(userData.getLatitude()).append("&");
-                    buffer.append("longitude").append("=").append(userData.getLongitude()).append("&");
-                    buffer.append("type").append("=").append(userData.getType());
+                    buffer.append("id").append("=").append(userDTO.getId()).append("&");
+                    buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
+                    buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
+                    buffer.append("type").append("=").append(userDTO.getType());
 
                     // 서버 전송
                     OutputStream os = httpConn.getOutputStream();
@@ -116,11 +116,11 @@ public class RequestHttpConnection {
     }
 
     // update
-    public void putUserData(UserData userData){
+    public void putUserData(UserDTO userDTO){
         new Thread(){
             public void run() {
                 try {
-                    String putUrl = test_server + userData.getId();
+                    String putUrl = test_server + userDTO.getId();
                     url = new URL(putUrl);
                     httpConn = (HttpURLConnection) url.openConnection();
 
@@ -128,10 +128,10 @@ public class RequestHttpConnection {
                     httpConn.setRequestMethod("PUT");
 
                     StringBuffer buffer = new StringBuffer();
-                    buffer.append("id").append("=").append(userData.getId()).append("&");
-                    buffer.append("latitude").append("=").append(userData.getLatitude()).append("&");
-                    buffer.append("longitude").append("=").append(userData.getLongitude()).append("&");
-                    buffer.append("type").append("=").append(userData.getType());
+                    buffer.append("id").append("=").append(userDTO.getId()).append("&");
+                    buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
+                    buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
+                    buffer.append("type").append("=").append(userDTO.getType());
 
                     // 서버 전송
                     OutputStream os = httpConn.getOutputStream();
@@ -154,11 +154,11 @@ public class RequestHttpConnection {
     }
 
     // delete
-    public void deleteUserData(UserData userData){
+    public void deleteUserData(UserDTO userDTO){
         new Thread(){
             public void run() {
                 try {
-                    String deleteUrl = test_server + userData.getId();
+                    String deleteUrl = test_server + userDTO.getId();
                     url = new URL(deleteUrl);
                     httpConn = (HttpURLConnection) url.openConnection();
 
@@ -166,7 +166,7 @@ public class RequestHttpConnection {
                     httpConn.setRequestMethod("DELETE");
 
                     StringBuffer buffer = new StringBuffer();
-                    buffer.append("id").append("=").append(userData.getId());
+                    buffer.append("id").append("=").append(userDTO.getId());
 
                     // 서버 전송
                     OutputStream os = httpConn.getOutputStream();
