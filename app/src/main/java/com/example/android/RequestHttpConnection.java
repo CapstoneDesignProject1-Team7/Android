@@ -50,9 +50,7 @@ public class RequestHttpConnection {
                     httpConn = (HttpURLConnection) url.openConnection();
                     // GET 설정
                     httpConn.setRequestMethod("GET");
-                    httpConn.setReadTimeout(3000);
-                    httpConn.setConnectTimeout(3000);
-                    httpConn.connect();
+                    httpConn.setDoInput(true);
 
                     InputStreamReader response = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
                     BufferedReader reader = new BufferedReader(response);
@@ -184,6 +182,7 @@ public class RequestHttpConnection {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }finally {
+                    httpConn.disconnect();
                     Log.i("REST API","REQUEST DELETE");
                 }
             }
