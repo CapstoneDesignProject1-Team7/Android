@@ -1,13 +1,13 @@
 package com.example.android;
 
-public class UserData {
+public class UserDTO {
     private String id;
     private int type;
     private double latitude;
     private double longitude;
     private int speed;
 
-    public UserData(String id, int type, double latitude, double longitude, int speed) {
+    public UserDTO(String id, int type, double latitude, double longitude, int speed) {
         super();
         this.id = id;
         this.type = type;
@@ -16,7 +16,7 @@ public class UserData {
         this.speed = speed;
     }
 
-    public UserData(String id, int type, double latitude, double longitude) {
+    public UserDTO(String id, int type, double latitude, double longitude) {
         super();
         this.id = id;
         this.type = type;
