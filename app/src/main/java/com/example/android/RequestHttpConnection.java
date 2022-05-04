@@ -45,6 +45,7 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
         httpConn = (HttpURLConnection) url.openConnection();
         // GET 설정
         httpConn.setRequestMethod("GET");
+        httpConn.setUseCaches(true);
         httpConn.setDoInput(true);
 
         InputStreamReader response = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
@@ -77,6 +78,8 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
 
                     // POST 로 설정
                     httpConn.setRequestMethod("POST");
+                    httpConn.setUseCaches(true);
+                    httpConn.setDoOutput(true);
 
                     StringBuffer buffer = new StringBuffer();
                     buffer.append("id").append("=").append(userDTO.getId()).append("&");
@@ -115,6 +118,8 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
 
                     // POST 로 설정
                     httpConn.setRequestMethod("PUT");
+                    httpConn.setUseCaches(true);
+                    httpConn.setDoOutput(true);
 
                     StringBuffer buffer = new StringBuffer();
                     buffer.append("id").append("=").append(userDTO.getId()).append("&");
@@ -153,6 +158,8 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
 
                     // DELETE 로 설정
                     httpConn.setRequestMethod("DELETE");
+                    httpConn.setUseCaches(true);
+                    httpConn.setDoOutput(true);
 
                     StringBuffer buffer = new StringBuffer();
                     buffer.append("id").append("=").append(userDTO.getId());
