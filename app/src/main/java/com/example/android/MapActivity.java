@@ -48,7 +48,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private LocationReceiver locationReceiver;
     private TextView speedTextView;
     private UserDTO userDTO;
-    private ArrayList nearByUserList;
+    private ArrayList<LocationDTO> nearByUserList;
     private RequestHttpConnection httpConn;
     private Timer timer;
   
@@ -175,7 +175,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             @Override
             public void run() {
                 //httpConn.putUserData(userData);
-                nearByUserList = httpConn.getUserData(userDTO);
+                httpConn.setUserDTO(userDTO);
+                try {
+                    nearByUserList = httpConn.call();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (nearByUserList!=null) {
+                    int numberOfPeople = nearByUserList.size();
+                    for (int i = 0; i < numberOfPeople; i++) {
+                        String lat = String.valueOf(nearByUserList.get(i).getLatitude());
+                        String lo = String.valueOf(nearByUserList.get(i).getLongitude());
+                        Log.i("nearByUserList", lat + " " + lo);
+                    }
+                }else{
+                    Log.i("nearByUserList ", "NULL");
+                }
             }
         };
         // 3초 마다 호출

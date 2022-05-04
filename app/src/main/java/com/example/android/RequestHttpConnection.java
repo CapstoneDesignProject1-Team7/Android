@@ -12,68 +12,57 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 
-public class RequestHttpConnection {
+public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
     // test server
     private String test_server;
     private HttpURLConnection httpConn;
     private URL url;
+    private UserDTO userDTO;
+    int otherType;
 
     public RequestHttpConnection(){
-        test_server = "http://192.168.35.49:8080/user/";
+        test_server = "http://39.121.10.168:8001/user/";
     }
-
+    public void setUserDTO(UserDTO userDTO) {
+        this.userDTO = userDTO;
+    }
     // get
-    public ArrayList<LocationDTO> getUserData(UserDTO userDTO){
+    @Override
+    public ArrayList<LocationDTO> call() throws Exception {
+        // 운전자라면 보행자의 정보를, 보행자라면 운전자의 정보를 넘김
+        otherType = userDTO.getType()==0 ? 1 : 0;
+
         ArrayList<LocationDTO> nearByUserList = new ArrayList<>();
+        StringBuffer buffer = new StringBuffer(test_server);
+        buffer.append("?");
+        buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
+        buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
+        buffer.append("type").append("=").append(otherType);
 
-        new Thread(){
-            public void run() {
-                try {
+        url = new URL(buffer.toString());
+        httpConn = (HttpURLConnection) url.openConnection();
+        // GET 설정
+        httpConn.setRequestMethod("GET");
+        httpConn.setDoInput(true);
 
-                    StringBuffer buffer = new StringBuffer(test_server);
-                    buffer.append("?");
-                    buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
-                    buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
-                    buffer.append("type").append("=").append(userDTO.getType());
+        InputStreamReader response = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
+        BufferedReader reader = new BufferedReader(response);
+        buffer = new StringBuffer();
+        String line = "";
 
-                    url = new URL(buffer.toString());
-                    httpConn = (HttpURLConnection) url.openConnection();
-                    // GET 설정
-                    httpConn.setRequestMethod("GET");
-                    httpConn.setDoInput(true);
+        while((line = reader.readLine()) != null){
+            buffer.append(line + "\n");
+        }
 
-                    InputStreamReader response = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
-                    BufferedReader reader = new BufferedReader(response);
-
-                    buffer = new StringBuffer();
-
-                    String line = "";
-
-                    while((line = reader.readLine()) != null){
-                        buffer.append(line + "\n");
-                    }
-
-                    JSONArray jsonArray = new JSONArray(buffer.toString());
-                    for(int i = 0; i < jsonArray.length(); i++){
-                        JSONObject jObject = jsonArray.getJSONObject(i);
-                        double latitude = jObject.getDouble("latitude");
-                        double longitude = jObject.getDouble("longitude");
-                        nearByUserList.add(new LocationDTO(latitude, longitude));
-                    }
-
-                    //Log.i("RESULT", jsonArray.toString());
-
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }finally {
-                    Log.i("REST API","REQUEST GET");
-                }
-            }
-        }.start();
-
+        JSONArray jsonArray = new JSONArray(buffer.toString());
+        for(int i = 0; i < jsonArray.length(); i++){
+            JSONObject jObject = jsonArray.getJSONObject(i);
+            double latitude = jObject.getDouble("latitude");
+            double longitude = jObject.getDouble("longitude");
+            nearByUserList.add(new LocationDTO(latitude, longitude));
+        }
         return nearByUserList;
     }
 
