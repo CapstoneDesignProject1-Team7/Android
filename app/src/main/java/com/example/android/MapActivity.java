@@ -1,5 +1,9 @@
 package com.example.android;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.UiThread;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +17,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -62,7 +67,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         httpConn = new RequestHttpConnection();
         nearByUserList = new ArrayList<LocationDTO>();
         timer = new Timer();
-
+        
+        // RESUMED 상태에서 실행 불가능
+        startWifiService();
 
         requestGPSSettings();
         showMap();
@@ -197,7 +204,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         timer.schedule(getUserDataTask, 0, 3000);
     }
     private void startService(){
-        startWifiService();
         startLocationService();
         Intent intent = getIntent();
         int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
@@ -217,12 +223,30 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private void turnOnWifi(){
         WifiManager wifiManager = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifiManager != null){
-            if(!wifiManager.isWifiEnabled()){
-                // 와이파이 꺼진 상태
-                wifiManager.setWifiEnabled(true); // 와이파이 켠다
+            if(!wifiManager.isWifiEnabled()) {
+                // 안드로이드 Q 이전 버전에서는 정상 작동
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
+                    wifiManager.setWifiEnabled(true);
+                // 이후 버전은 사용자에게 켜 달라고 요청하는 방법밖에 없음.
+                else {
+                    ActivityResultLauncher<Intent> wifiPanelResult = registerForActivityResult(
+                            new ActivityResultContracts.StartActivityForResult(),
+                            new ActivityResultCallback<ActivityResult>() {
+                                @Override
+                                public void onActivityResult(ActivityResult result) {
+                                    if(result.getResultCode() == Activity.RESULT_OK){
+                                        Log.i("WIFI", "SET WIFI");
+                                    }
+                                }
+                            }
+                    );
+                    Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                    wifiPanelResult.launch(panelIntent);
+                }
             }
         }
     }
+
 
     private boolean isLocationServiceRunning() {
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
