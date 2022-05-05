@@ -14,57 +14,14 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
-public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
+public class RequestHttpConnection{
     // test server
     private String test_server;
     private HttpURLConnection httpConn;
     private URL url;
-    private UserDTO userDTO;
-    int otherType;
 
     public RequestHttpConnection(){
         test_server = "http://39.121.10.168:8001/user/";
-    }
-    public void setUserDTO(UserDTO userDTO) {
-        this.userDTO = userDTO;
-    }
-    // get
-    @Override
-    public ArrayList<LocationDTO> call() throws Exception {
-        // 운전자라면 보행자의 정보를, 보행자라면 운전자의 정보를 넘김
-        otherType = userDTO.getType()==0 ? 1 : 0;
-
-        ArrayList<LocationDTO> nearByUserList = new ArrayList<>();
-        StringBuffer buffer = new StringBuffer(test_server);
-        buffer.append("?");
-        buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
-        buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
-        buffer.append("type").append("=").append(otherType);
-
-        url = new URL(buffer.toString());
-        httpConn = (HttpURLConnection) url.openConnection();
-        // GET 설정
-        httpConn.setRequestMethod("GET");
-        httpConn.setUseCaches(true);
-        httpConn.setDoInput(true);
-
-        InputStreamReader response = new InputStreamReader(httpConn.getInputStream(), "UTF-8");
-        BufferedReader reader = new BufferedReader(response);
-        buffer = new StringBuffer();
-        String line = "";
-
-        while((line = reader.readLine()) != null){
-            buffer.append(line + "\n");
-        }
-
-        JSONArray jsonArray = new JSONArray(buffer.toString());
-        for(int i = 0; i < jsonArray.length(); i++){
-            JSONObject jObject = jsonArray.getJSONObject(i);
-            double latitude = jObject.getDouble("latitude");
-            double longitude = jObject.getDouble("longitude");
-            nearByUserList.add(new LocationDTO(latitude, longitude));
-        }
-        return nearByUserList;
     }
 
     // insert
@@ -94,6 +51,8 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
 
                     if(httpConn.getResponseCode() != 200) {
                         Log.i("ERROR","Not Ok : " + httpConn.getResponseCode());
+                    }else{
+                        Log.i("REST API"," COMPLETE POST");
                     }
 
                 } catch (MalformedURLException e) {
@@ -116,7 +75,7 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
                     url = new URL(putUrl);
                     httpConn = (HttpURLConnection) url.openConnection();
 
-                    // POST 로 설정
+                    // PUT 로 설정
                     httpConn.setRequestMethod("PUT");
                     httpConn.setUseCaches(true);
                     httpConn.setDoOutput(true);
@@ -134,6 +93,8 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
 
                     if(httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                         throw new Exception( "Not Ok : " + httpConn.getResponseCode());
+                    }else{
+                        Log.i("REST API","COMPLETE PUT");
                     }
 
                 } catch (MalformedURLException e) {
@@ -171,6 +132,8 @@ public class RequestHttpConnection implements Callable<ArrayList<LocationDTO>> {
 
                     if(httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
                         throw new Exception( "Not Ok : " + httpConn.getResponseCode());
+                    }else{
+                        Log.i("REST API","COMPLETE DELETE");
                     }
 
                 } catch (MalformedURLException e) {

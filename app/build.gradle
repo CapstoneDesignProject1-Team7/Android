@@ -40,4 +40,9 @@ dependencies {
     implementation 'com.naver.maps:map-sdk:3.14.1'
     // FusedLocationSource
     implementation 'com.google.android.gms:play-services-location:19.0.1'
+
+    implementation 'com.liulishuo.okdownload:okdownload:1.0.5'
+    implementation 'com.liulishuo.okdownload:okhttp:1.0.5'
+    implementation 'com.liulishuo.okdownload:okhttp:1.0.5'
+    implementation 'com.squareup.okhttp3:okhttp:3.12.0'
 }

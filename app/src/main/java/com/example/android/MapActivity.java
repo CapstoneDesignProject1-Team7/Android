@@ -1,5 +1,7 @@
 package com.example.android;
 
+import static android.speech.tts.TextToSpeech.QUEUE_ADD;
+
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -21,6 +23,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,14 +42,19 @@ import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.NaverMap;
 import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
+import com.naver.maps.map.overlay.Marker;
+import com.naver.maps.map.overlay.OverlayImage;
 import com.naver.maps.map.util.FusedLocationSource;
 
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, TextToSpeechInitListener {
     private NaverMap mNaverMap;
     private FusedLocationSource locationSource;
     private GoogleApiClient googleApiClient;
@@ -56,6 +64,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private ArrayList<LocationDTO> nearByUserList;
     private RequestHttpConnection httpConn;
     private Timer timer;
+    private int numberOfPeople = -1;
+    private TextToSpeechInitializer initTTS;
+    private TextToSpeech talk;
+    private boolean ttsFlag = false;
   
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +79,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         httpConn = new RequestHttpConnection();
         nearByUserList = new ArrayList<LocationDTO>();
         timer = new Timer();
-        
+        initTTS = new TextToSpeechInitializer(this, this);
         // RESUMED 상태에서 실행 불가능
         startWifiService();
 
@@ -99,7 +111,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         // 내 데이터 삭제
         httpConn.deleteUserData(userDTO);
         // 타이머 종료
-        timer.cancel();
+        if (timer != null)
+            timer.cancel();
+        // TextToSpeech 종료
+        if (talk != null){
+            talk.stop();
+            talk.shutdown();
+        }
     }
 
     private GoogleApiClient getAPIClientInstance() {
@@ -181,19 +199,31 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         TimerTask getUserDataTask = new TimerTask(){
             @Override
             public void run() {
-                //httpConn.putUserData(userData);
-                httpConn.setUserDTO(userDTO);
+                //httpConn.putUserData(userDTO);  // 테스트 하기 위해 잠시 중단
+                //Log.i("내 위치: ",userDTO.getLatitude()+" "+userDTO.getLongitude());
+                UserDataThread userDataThread = new UserDataThread(userDTO);
+                userDataThread.start();
                 try {
-                    nearByUserList = httpConn.call();
+                    userDataThread.join();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                nearByUserList = userDataThread.getUserData();
                 if (nearByUserList!=null) {
-                    int numberOfPeople = nearByUserList.size();
-                    for (int i = 0; i < numberOfPeople; i++) {
-                        String lat = String.valueOf(nearByUserList.get(i).getLatitude());
-                        String lo = String.valueOf(nearByUserList.get(i).getLongitude());
-                        Log.i("nearByUserList", lat + " " + lo);
+                    if (nearByUserList.size()>0){
+                        if(numberOfPeople!=nearByUserList.size()) {
+                            numberOfPeople = nearByUserList.size();
+                            // 사용자가 운전자(1)면 50m 이내 보행자 수를 알림
+                            String otherType = userDTO.getType() == 1 ? "보행자가" : "운전자가";
+                            if (ttsFlag) {
+                                talk.speak("오십미터 내에 " + otherType + numberOfPeople + "명 있습니다", QUEUE_ADD, null);
+                            }
+                        }
+                        for (int i = 0; i < numberOfPeople; i++) {
+                            String lat = String.valueOf(nearByUserList.get(i).getLatitude());
+                            String lo = String.valueOf(nearByUserList.get(i).getLongitude());
+                            Log.i("nearByUserList", i+" "+lat + " " + lo);
+                        }
                     }
                 }else{
                     Log.i("nearByUserList ", "NULL");
@@ -208,9 +238,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Intent intent = getIntent();
         int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
         String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
-
-        // 내 데이터로 변경 필요 - test data (경북대학교)
-        userDTO = new UserDTO(id, type, 35.8886, 128.6116);
+        // 내 데이터로 변경 필요 - test data (경북대학교 누리관 근처)
+        userDTO = new UserDTO(id, type, 35.89327, 128.61390);
 
         // for test data
         httpConn.postUserData(userDTO);
@@ -293,10 +322,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             double longitude = b.getDouble("longitude");
             int speed = b.getInt("speed");
             speedTextView = findViewById(R.id.speed);
-            userDTO.setSpeed(speed);
+            //userDTO.setSpeed(speed);
             // 테스트 하기 위해 잠시 중단
-//            userData.setLatitude(latitude);
-//            userData.setLongitude(longitude);
+            //userDTO.setLatitude(latitude);
+            //userDTO.setLongitude(longitude);
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -307,4 +336,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+    @Override
+    public void onSuccess(TextToSpeech tts){
+        // TextToSpeechInitListener 인터페이스 구현
+        this.talk = tts;
+        ttsFlag = true;
+    }
+    @Override
+    public void onFailure(TextToSpeech tts){
+        // TextToSpeechInitListener 인터페이스 구현
+        ttsFlag = false;
+        finish();
+    }
 }
