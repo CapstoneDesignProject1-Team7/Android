@@ -22,6 +22,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
@@ -49,6 +50,7 @@ import com.naver.maps.map.util.FusedLocationSource;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -68,7 +70,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private TextToSpeechInitializer initTTS;
     private TextToSpeech talk;
     private boolean ttsFlag = false;
-  
+    private ArrayList<Marker> markerList;
+    private ArrayList<Marker> delMarkerList;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -194,7 +197,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         uiSettings.setLocationButtonEnabled(true);
         uiSettings.setZoomControlEnabled(false);
         startService();
-
+        markerList = new ArrayList<>();
+        delMarkerList = new ArrayList<>();
 
         TimerTask getUserDataTask = new TimerTask(){
             @Override
@@ -212,6 +216,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 if (nearByUserList!=null) {
                     if (nearByUserList.size()>0){
                         if(numberOfPeople!=nearByUserList.size()) {
+                            // (3초 전에 50m 주변에 있던 사람 수) != (지금 50m 주변에 있는 사람 수)
                             numberOfPeople = nearByUserList.size();
                             // 사용자가 운전자(1)면 50m 이내 보행자 수를 알림
                             String otherType = userDTO.getType() == 1 ? "보행자가" : "운전자가";
@@ -220,10 +225,34 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             }
                         }
                         for (int i = 0; i < numberOfPeople; i++) {
+                            // 사람 수 만큼 마커 생성
                             String lat = String.valueOf(nearByUserList.get(i).getLatitude());
                             String lo = String.valueOf(nearByUserList.get(i).getLongitude());
                             Log.i("nearByUserList", i+" "+lat + " " + lo);
+                            Marker m = new Marker();
+                            setMarker(m, nearByUserList.get(i));
+                            markerList.add(m); // 마커 리스트에 마커 추가
                         }
+
+                        MapActivity.this.runOnUiThread(new Runnable(){
+                            public void run(){
+                                // 마커 삭제
+                                for (int i=0;i<delMarkerList.size();i++){
+                                    Marker marker = delMarkerList.get(i);
+                                    marker.setMap(null);
+                                    Log.d("마커",i + " 지움");
+                                }
+                                delMarkerList.clear();
+                                delMarkerList = markerList;
+                                // 마커 그리기
+                                for (int i = 0; i<markerList.size();i++){
+                                    Marker marker = markerList.get(i);
+                                    marker.setMap(mNaverMap);
+                                    Log.d("마커",i + " 그림");
+                                }
+                                markerList.clear();
+                            }
+                        });
                     }
                 }else{
                     Log.i("nearByUserList ", "NULL");
@@ -232,6 +261,15 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         };
         // 3초 마다 호출
         timer.schedule(getUserDataTask, 0, 3000);
+    }
+    private void setMarker(Marker marker, LocationDTO locationDTO){
+        // 마커 아이콘, 위도, 경도 등 설정
+        //marker.setIconPerspectiveEnabled(true); // 원근효과
+        marker.setIcon(OverlayImage.fromResource(R.drawable.ic_baseline_location_on_36));
+        marker.setAlpha(0.8f); //투명도
+        double lat = locationDTO.getLatitude();
+        double lng = locationDTO.getLongitude();
+        marker.setPosition(new LatLng(lat, lng));
     }
     private void startService(){
         startLocationService();
