@@ -67,10 +67,11 @@ public class RequestHttpConnection{
     }
 
     // update
-    public void putUserData(UserDTO userDTO){
-        new Thread(){
+    public Thread putUserData(UserDTO userDTO){
+        Thread thread = new Thread(){
             public void run() {
                 try {
+                    Log.d("putUserData",userDTO.getLatitude()+" "+userDTO.getLongitude());
                     String putUrl = test_server + userDTO.getId();
                     url = new URL(putUrl);
                     httpConn = (HttpURLConnection) url.openConnection();
@@ -105,7 +106,8 @@ public class RequestHttpConnection{
                     Log.i("REST API","REQUEST UPDATE");
                 }
             }
-        }.start();
+        };
+        return thread;
     }
 
     // delete

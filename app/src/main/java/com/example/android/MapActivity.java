@@ -22,7 +22,6 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
@@ -50,10 +49,6 @@ import com.naver.maps.map.util.FusedLocationSource;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, TextToSpeechInitListener {
@@ -72,6 +67,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private boolean ttsFlag = false;
     private ArrayList<Marker> markerList;
     private ArrayList<Marker> delMarkerList;
+    Boolean completePost = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -203,16 +199,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         TimerTask getUserDataTask = new TimerTask(){
             @Override
             public void run() {
-                //httpConn.putUserData(userDTO);  // 테스트 하기 위해 잠시 중단
                 //Log.i("내 위치: ",userDTO.getLatitude()+" "+userDTO.getLongitude());
-                UserDataThread userDataThread = new UserDataThread(userDTO);
-                userDataThread.start();
+                UserDataThread getThread = new UserDataThread(userDTO);
+                Thread putThread = httpConn.putUserData(userDTO);
                 try {
-                    userDataThread.join();
+                    if(completePost) {
+                        // get 끝나면 put 실행
+                        getThread.start();
+                        getThread.join();
+                        putThread.start();
+                        putThread.join();
+                        Log.i("내 위치: ", userDTO.getLatitude() + " " + userDTO.getLongitude());
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                nearByUserList = userDataThread.getUserData();
+                nearByUserList = getThread.getUserData();
                 if (nearByUserList!=null) {
                     if (nearByUserList.size()>0){
                         if(numberOfPeople!=nearByUserList.size()) {
@@ -276,11 +278,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Intent intent = getIntent();
         int type = intent.getIntExtra("type", -1); // 운전자 1 보행자 0
         String id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID); // 사용자 id
-        // 내 데이터로 변경 필요 - test data (경북대학교 누리관 근처)
-        userDTO = new UserDTO(id, type, 35.89327, 128.61390);
-
-        // for test data
-        httpConn.postUserData(userDTO);
+        // 내 데이터로 변경 - userDTO 생성
+        userDTO = new UserDTO(id, type, 0.0, 0.0);
 
     }
     private void startWifiService(){
@@ -361,9 +360,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             int speed = b.getInt("speed");
             speedTextView = findViewById(R.id.speed);
             //userDTO.setSpeed(speed);
-            // 테스트 하기 위해 잠시 중단
-            //userDTO.setLatitude(latitude);
-            //userDTO.setLongitude(longitude);
+            userDTO.setLatitude(latitude);
+            userDTO.setLongitude(longitude);
+            if(!completePost){
+                httpConn.postUserData(userDTO);
+                completePost = true;
+            }
             handler.post(new Runnable() {
                 @Override
                 public void run() {
