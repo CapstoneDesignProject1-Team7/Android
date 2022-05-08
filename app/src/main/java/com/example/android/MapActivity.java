@@ -216,46 +216,42 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 }
                 nearByUserList = getThread.getUserData();
                 if (nearByUserList!=null) {
-                    if (nearByUserList.size()>0){
-                        if(numberOfPeople!=nearByUserList.size()) {
-                            // (3초 전에 50m 주변에 있던 사람 수) != (지금 50m 주변에 있는 사람 수)
-                            numberOfPeople = nearByUserList.size();
-                            // 사용자가 운전자(1)면 50m 이내 보행자 수를 알림
-                            String otherType = userDTO.getType() == 1 ? "보행자가" : "운전자가";
-                            if (ttsFlag) {
-                                talk.speak("오십미터 내에 " + otherType + numberOfPeople + "명 있습니다", QUEUE_ADD, null);
-                            }
+                    if(numberOfPeople!=nearByUserList.size()) {
+                        // (3초 전에 50m 주변에 있던 사람 수) != (지금 50m 주변에 있는 사람 수)
+                        numberOfPeople = nearByUserList.size();
+                        // 사용자가 운전자(1)면 50m 이내 보행자 수를 알림
+                        String otherType = userDTO.getType() == 1 ? "보행자가" : "운전자가";
+                        if (ttsFlag) {
+                            talk.speak("오십미터 내에 " + otherType + numberOfPeople + "명 있습니다", QUEUE_ADD, null);
                         }
-                        for (int i = 0; i < numberOfPeople; i++) {
-                            // 사람 수 만큼 마커 생성
-                            String lat = String.valueOf(nearByUserList.get(i).getLatitude());
-                            String lo = String.valueOf(nearByUserList.get(i).getLongitude());
-                            Log.i("nearByUserList", i+" "+lat + " " + lo);
-                            Marker m = new Marker();
-                            setMarker(m, nearByUserList.get(i));
-                            markerList.add(m); // 마커 리스트에 마커 추가
-                        }
-
-                        MapActivity.this.runOnUiThread(new Runnable(){
-                            public void run(){
-                                // 마커 삭제
-                                for (int i=0;i<delMarkerList.size();i++){
-                                    Marker marker = delMarkerList.get(i);
-                                    marker.setMap(null);
-                                    Log.d("마커",i + " 지움");
-                                }
-                                delMarkerList.clear();
-                                delMarkerList = markerList;
-                                // 마커 그리기
-                                for (int i = 0; i<markerList.size();i++){
-                                    Marker marker = markerList.get(i);
-                                    marker.setMap(mNaverMap);
-                                    Log.d("마커",i + " 그림");
-                                }
-                                markerList.clear();
-                            }
-                        });
                     }
+                    for (int i = 0; i < numberOfPeople; i++) {
+                        // 사람 수 만큼 마커 생성
+                        String lat = String.valueOf(nearByUserList.get(i).getLatitude());
+                        String lo = String.valueOf(nearByUserList.get(i).getLongitude());
+                        Log.i("nearByUserList", i+" "+lat + " " + lo);
+                        Marker m = new Marker();
+                        setMarker(m, nearByUserList.get(i));
+                        markerList.add(m); // 마커 리스트에 마커 추가
+                    }
+
+                    MapActivity.this.runOnUiThread(new Runnable(){
+                        public void run(){
+                            // 마커 삭제
+                            for (int i=0;i<delMarkerList.size();i++){
+                                Marker marker = delMarkerList.get(i);
+                                marker.setMap(null);
+                            }
+                            delMarkerList.clear();
+                            // 마커 그리기
+                            for (int i = 0; i<markerList.size();i++){
+                                Marker marker = markerList.get(i);
+                                delMarkerList.add(marker);
+                                marker.setMap(mNaverMap);
+                            }
+                            markerList.clear();
+                        }
+                    });
                 }else{
                     Log.i("nearByUserList ", "NULL");
                 }
