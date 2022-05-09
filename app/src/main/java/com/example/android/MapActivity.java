@@ -56,6 +56,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private FusedLocationSource locationSource;
     private GoogleApiClient googleApiClient;
     private LocationReceiver locationReceiver;
+    BatteryLevelReceiver batteryLevelReceiver;
     private TextView speedTextView;
     private UserDTO userDTO;
     private ArrayList<LocationDTO> nearByUserList;
@@ -68,6 +69,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private ArrayList<Marker> markerList;
     private ArrayList<Marker> delMarkerList;
     Boolean completePost = false;
+    private int networkFrequency = Constants.NETWORK_FREQUENCY;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,6 +95,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         locationReceiver = new LocationReceiver(new Handler());
         final IntentFilter intentFilter = new IntentFilter("UpdateSpeed");
         LocalBroadcastManager.getInstance(this).registerReceiver(locationReceiver, intentFilter);
+
+        batteryLevelReceiver = new BatteryLevelReceiver(this);
+        IntentFilter batteryIntentFilter = new IntentFilter();
+        batteryIntentFilter.addAction(Intent.ACTION_BATTERY_LOW);
+        batteryIntentFilter.addAction(Intent.ACTION_BATTERY_OKAY);
+        batteryIntentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        registerReceiver(batteryLevelReceiver, batteryIntentFilter);
     }
 
     @Override
@@ -100,6 +110,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         if (locationReceiver != null)
             LocalBroadcastManager.getInstance(this).unregisterReceiver(locationReceiver);
         locationReceiver = null;
+
+        unregisterReceiver(batteryLevelReceiver);
     }
 
     @Override
@@ -195,10 +207,18 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         startService();
         markerList = new ArrayList<>();
         delMarkerList = new ArrayList<>();
-
+        runTimerTask();
+    }
+    public void runTimerTask(){
         TimerTask getUserDataTask = new TimerTask(){
             @Override
             public void run() {
+                if(networkFrequency != Constants.NETWORK_FREQUENCY){
+                    // 배터리 15% 이하가 되면 TimerTask 취소하고 period 변경 후 reschedule
+                    this.cancel();
+                    networkFrequency = Constants.NETWORK_FREQUENCY;
+                    runTimerTask();
+                }
                 //Log.i("내 위치: ",userDTO.getLatitude()+" "+userDTO.getLongitude());
                 UserDataThread getThread = new UserDataThread(userDTO);
                 Thread putThread = httpConn.putUserData(userDTO);
@@ -258,7 +278,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             }
         };
         // 3초 마다 호출
-        timer.schedule(getUserDataTask, 0, 3000);
+        timer.schedule(getUserDataTask, 0, networkFrequency);
+        timer.purge();
     }
     private void setMarker(Marker marker, LocationDTO locationDTO){
         // 마커 아이콘, 위도, 경도 등 설정

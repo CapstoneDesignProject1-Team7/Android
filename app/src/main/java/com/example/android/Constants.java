@@ -14,5 +14,5 @@ public class Constants {
             Manifest.permission.ACCESS_WIFI_STATE,
             Manifest.permission.CHANGE_WIFI_STATE
     };
-
+    public static int NETWORK_FREQUENCY = 3000;
 }

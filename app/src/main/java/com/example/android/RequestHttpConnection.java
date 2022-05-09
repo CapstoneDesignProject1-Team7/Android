@@ -71,7 +71,6 @@ public class RequestHttpConnection{
         Thread thread = new Thread(){
             public void run() {
                 try {
-                    Log.d("putUserData",userDTO.getLatitude()+" "+userDTO.getLongitude());
                     String putUrl = test_server + userDTO.getId();
                     url = new URL(putUrl);
                     httpConn = (HttpURLConnection) url.openConnection();
