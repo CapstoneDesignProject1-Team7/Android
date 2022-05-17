@@ -118,7 +118,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onDestroy() {
         super.onDestroy();
         stopLocationService();
-
+        stopWifiConnectionService();
         // 내 데이터 삭제
         httpConn.deleteUserData(userDTO);
         // 타이머 종료
@@ -300,6 +300,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     }
     private void startWifiService(){
+        Intent intent = new Intent(getApplicationContext(), WifiConnectionService.class);
+        intent.setAction(Constants.ACTION_START_WIFI_SERVICE);
+        startService(intent);
         turnOnWifi();
     }
 
@@ -331,7 +334,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
 
-    private boolean isLocationServiceRunning() {
+    private boolean isServiceRunning() {
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         if (activityManager != null) {
             for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
@@ -340,13 +343,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                         return true;
                     }
                 }
+                else if(WifiConnectionService.class.getName().equals(service.service.getClassName())){
+                    if (service.foreground) return true;
+                }
             }
             return false;
         }
         return false;
     }
     private void startLocationService() {
-        if (!isLocationServiceRunning()) {
+        if (!isServiceRunning()) {
             Intent intent = new Intent(getApplicationContext(), LocationService.class);
             intent.setAction(Constants.ACTION_START_LOCATION_SERVICE);
             startService(intent);
@@ -355,11 +361,18 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     private void stopLocationService() {
-        if (isLocationServiceRunning()) {
+        if (isServiceRunning()) {
             Intent intent = new Intent(getApplicationContext(), LocationService.class);
             intent.setAction(Constants.ACTION_STOP_LOCATION_SERVICE);
             startService(intent);
             Toast.makeText(this, "서비스를 종료합니다", Toast.LENGTH_SHORT).show();
+        }
+    }
+    public void stopWifiConnectionService(){
+        if (isServiceRunning()) {
+            Intent intent = new Intent(getApplicationContext(), WifiConnectionService.class);
+            intent.setAction(Constants.ACTION_STOP_WIFI_SERVICE);
+            startService(intent);
         }
     }
 
