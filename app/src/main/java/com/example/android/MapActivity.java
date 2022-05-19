@@ -18,6 +18,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -245,13 +247,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             talk.speak("오십미터 내에 " + otherType + numberOfPeople + "명 있습니다", QUEUE_ADD, null);
                         }
                     }
+                    boolean within10m = true;
                     for (int i = 0; i < numberOfPeople; i++) {
                         // 사람 수 만큼 마커 생성
-                        String lat = String.valueOf(nearByUserList.get(i).getLatitude());
-                        String lo = String.valueOf(nearByUserList.get(i).getLongitude());
-                        Log.i("nearByUserList", i+" "+lat + " " + lo);
+                        LocationDTO nearByUser = nearByUserList.get(i);
+                        if (within10m) {
+                            // 10m 내에 보행자/운전자가 있으면 경고음 울림
+                            double distance = DistanceCalculate.getDistance(nearByUser.getLatitude(), nearByUser.getLongitude(), userDTO.getLatitude(), userDTO.getLongitude()); // 미터
+                            if (distance<=10){
+                                ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_MUSIC, ToneGenerator.MAX_VOLUME);
+                                tone.startTone(ToneGenerator.TONE_DTMF_S, 500);
+                            }else{
+                                within10m = false;
+                            }
+                        }
                         Marker m = new Marker();
-                        setMarker(m, nearByUserList.get(i));
+                        setMarker(m, nearByUser);
                         markerList.add(m); // 마커 리스트에 마커 추가
                     }
 
