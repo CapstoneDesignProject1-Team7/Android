@@ -247,19 +247,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             talk.speak("오십미터 내에 " + otherType + numberOfPeople + "명 있습니다", QUEUE_ADD, null);
                         }
                     }
-                    boolean within10m = true;
                     for (int i = 0; i < numberOfPeople; i++) {
                         // 사람 수 만큼 마커 생성
                         LocationDTO nearByUser = nearByUserList.get(i);
-                        if (within10m) {
+                        double distance = DistanceCalculate.getDistance(nearByUser.getLatitude(), nearByUser.getLongitude(), userDTO.getLatitude(), userDTO.getLongitude()); // 미터
+                        if (distance<=10){
                             // 10m 내에 보행자/운전자가 있으면 경고음 울림
-                            double distance = DistanceCalculate.getDistance(nearByUser.getLatitude(), nearByUser.getLongitude(), userDTO.getLatitude(), userDTO.getLongitude()); // 미터
-                            if (distance<=10){
-                                ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_MUSIC, ToneGenerator.MAX_VOLUME);
-                                tone.startTone(ToneGenerator.TONE_DTMF_S, 500);
-                            }else{
-                                within10m = false;
-                            }
+                            ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_MUSIC, ToneGenerator.MAX_VOLUME);
+                            tone.startTone(ToneGenerator.TONE_DTMF_S, 500);
+                            nearByUser.setWithin10m(true);
+                        }else{
+                            nearByUser.setWithin10m(false);
                         }
                         Marker m = new Marker();
                         setMarker(m, nearByUser);
@@ -295,11 +293,26 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private void setMarker(Marker marker, LocationDTO locationDTO){
         // 마커 아이콘, 위도, 경도 등 설정
         //marker.setIconPerspectiveEnabled(true); // 원근효과
-        marker.setIcon(OverlayImage.fromResource(R.drawable.ic_baseline_location_on_36));
         marker.setAlpha(0.8f); //투명도
         double lat = locationDTO.getLatitude();
         double lng = locationDTO.getLongitude();
         marker.setPosition(new LatLng(lat, lng));
+        int markerSize = locationDTO.isWithin10m() ? 180 : 100;
+        int img = R.drawable.ic_baseline_location_on_36_slow;
+        if (userDTO.getType()==0){ //사용자가 보행자임
+            if (locationDTO.getVelocity() >= 30){
+                // 운전자 속도가 30km/h 이상
+                img = R.drawable.ic_baseline_location_on_36;
+            }
+        }else{ // 사용자가 운전자임
+            if (locationDTO.getVelocity() >= 7){
+                // 보행자 속도가 7km/h 이상
+                img = R.drawable.ic_baseline_location_on_36;
+            }
+        }
+        marker.setIcon(OverlayImage.fromResource(img));
+        marker.setHeight(markerSize);
+        marker.setWidth(markerSize);
     }
     private void startService(){
         startLocationService();
@@ -400,7 +413,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             double longitude = b.getDouble("longitude");
             int speed = b.getInt("speed");
             speedTextView = findViewById(R.id.speed);
-            //userDTO.setSpeed(speed);
+            userDTO.setSpeed(speed);
             userDTO.setLatitude(latitude);
             userDTO.setLongitude(longitude);
             if(!completePost){

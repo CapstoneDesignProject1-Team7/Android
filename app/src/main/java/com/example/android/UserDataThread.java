@@ -25,6 +25,7 @@ public class UserDataThread extends Thread {
             buffer.append("?");
             buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
             buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
+            buffer.append("velocity").append("=").append(userDTO.getSpeed()).append("&");
             buffer.append("type").append("=").append(userDTO.getType());
 
             URL url = new URL(buffer.toString());
@@ -50,7 +51,8 @@ public class UserDataThread extends Thread {
                 JSONObject jObject = jsonArray.getJSONObject(i);
                 double latitude = jObject.getDouble("latitude");
                 double longitude = jObject.getDouble("longitude");
-                nearByUserList.add(new LocationDTO(latitude, longitude));
+                int velocity = jObject.getInt("velocity");
+                nearByUserList.add(new LocationDTO(latitude, longitude, velocity));
             }
 
             Log.i("스레드 RESULT", jsonArray.toString());

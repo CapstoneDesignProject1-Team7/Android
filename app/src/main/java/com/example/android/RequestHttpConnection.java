@@ -42,6 +42,7 @@ public class RequestHttpConnection{
                     buffer.append("id").append("=").append(userDTO.getId()).append("&");
                     buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
                     buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
+                    buffer.append("velocity").append("=").append(userDTO.getSpeed()).append("&");
                     buffer.append("type").append("=").append(userDTO.getType());
 
                     // 서버 전송
@@ -84,6 +85,7 @@ public class RequestHttpConnection{
                     buffer.append("id").append("=").append(userDTO.getId()).append("&");
                     buffer.append("latitude").append("=").append(userDTO.getLatitude()).append("&");
                     buffer.append("longitude").append("=").append(userDTO.getLongitude()).append("&");
+                    buffer.append("velocity").append("=").append(userDTO.getSpeed()).append("&");
                     buffer.append("type").append("=").append(userDTO.getType());
 
                     // 서버 전송
